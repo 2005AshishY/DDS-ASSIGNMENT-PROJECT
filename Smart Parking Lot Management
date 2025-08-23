@@ -1,0 +1,153 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Car {
+    string plateNumber;
+    string ownerName;
+    string entryTime;
+    Car* next;
+};
+
+// Utility: current timestamp
+string currentTimestamp() {
+    time_t now = time(nullptr);
+    char buf[20];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    return string(buf);
+}
+
+class ParkingLot {
+    Car* head;           // linked list head
+    int capacity;        // max slots
+    int count;           // current cars
+public:
+    ParkingLot(int cap) {
+        capacity = cap;
+        count = 0;
+        head = nullptr;
+    }
+
+    // Add a new car (entry)
+    void parkCar(string plate, string owner) {
+        if (count >= capacity) {
+            cout << "Parking lot FULL! Cannot park car " << plate << "\n";
+            return;
+        }
+        Car* newCar = new Car{plate, owner, currentTimestamp(), nullptr};
+        newCar->next = head;
+        head = newCar;
+        count++;
+        cout << "Car " << plate << " parked successfully. Slots used: " 
+             << count << "/" << capacity << "\n";
+    }
+
+    // Remove a car (exit)
+    void removeCar(string plate) {
+        if (!head) {
+            cout << "Parking lot empty.\n";
+            return;
+        }
+        Car* curr = head;
+        Car* prev = nullptr;
+        while (curr && curr->plateNumber != plate) {
+            prev = curr;
+            curr = curr->next;
+        }
+        if (!curr) {
+            cout << "Car with plate " << plate << " not found.\n";
+            return;
+        }
+        if (prev) prev->next = curr->next;
+        else head = curr->next;
+
+        cout << "Car " << plate << " exited. Parked at: " << curr->entryTime << "\n";
+        delete curr;
+        count--;
+    }
+
+    // Display all parked cars
+    void showParkedCars() {
+        if (!head) {
+            cout << "No cars parked currently.\n";
+            return;
+        }
+        cout << "\n--- Active Parked Cars ---\n";
+        Car* temp = head;
+        while (temp) {
+            cout << "Plate: " << temp->plateNumber 
+                 << " | Owner: " << temp->ownerName 
+                 << " | Entry: " << temp->entryTime << "\n";
+            temp = temp->next;
+        }
+    }
+
+    // Get current available slots
+    void availableSlots() {
+        cout << "Available slots: " << (capacity - count) 
+             << " / " << capacity << "\n";
+    }
+
+    ~ParkingLot() {
+        while (head) {
+            Car* tmp = head;
+            head = head->next;
+            delete tmp;
+        }
+    }
+};
+
+// ---------- Menu ----------
+int main() {
+    int cap;
+    cout << "Enter parking lot capacity: ";
+    cin >> cap;
+    cin.ignore();
+
+    ParkingLot lot(cap);
+
+    while (true) {
+        cout << "\n=== Smart Parking Lot Management ===\n"
+             << "1) Park Car (Entry)\n"
+             << "2) Remove Car (Exit)\n"
+             << "3) Show Parked Cars\n"
+             << "4) Show Available Slots\n"
+             << "0) Exit\n"
+             << "Select: ";
+        int choice;
+        if (!(cin >> choice)) break;
+        cin.ignore();
+
+        if (choice == 0) {
+            cout << "Exiting system...\n";
+            break;
+        }
+
+        switch (choice) {
+            case 1: {
+                string plate, owner;
+                cout << "Enter plate number: ";
+                getline(cin, plate);
+                cout << "Enter owner name: ";
+                getline(cin, owner);
+                lot.parkCar(plate, owner);
+                break;
+            }
+            case 2: {
+                string plate;
+                cout << "Enter plate number to remove: ";
+                getline(cin, plate);
+                lot.removeCar(plate);
+                break;
+            }
+            case 3:
+                lot.showParkedCars();
+                break;
+            case 4:
+                lot.availableSlots();
+                break;
+            default:
+                cout << "Invalid choice.\n";
+        }
+    }
+    return 0;
+}
