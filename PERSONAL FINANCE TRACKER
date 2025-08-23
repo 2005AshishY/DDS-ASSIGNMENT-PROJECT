@@ -1,0 +1,362 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+constexpr int MAX_TXNS = 5000;
+
+enum class Type { INCOME = 0, EXPENSE = 1 };
+
+struct Transaction {
+    string date;       // Format: YYYY-MM-DD
+    string category;   // e.g., Salary, Food, Rent
+    string description;
+    double amount;     // Positive number
+    Type type;         // INCOME or EXPENSE
+};
+
+// ---------- Global storage: Array of structures ----------
+Transaction txns[MAX_TXNS];
+int txnCount = 0;
+
+// ---------- Utilities ----------
+bool isValidDate(const string& d) {
+    // Very light validation: YYYY-MM-DD length/positions/digits & 1..12, 1..31
+    if (d.size() != 10 || d[4] != '-' || d[7] != '-') return false;
+    string y = d.substr(0,4), m = d.substr(5,2), day = d.substr(8,2);
+    if (!all_of(y.begin(), y.end(), ::isdigit)) return false;
+    if (!all_of(m.begin(), m.end(), ::isdigit)) return false;
+    if (!all_of(day.begin(), day.end(), ::isdigit)) return false;
+    int mi = stoi(m), di = stoi(day);
+    return (mi >= 1 && mi <= 12 && di >= 1 && di <= 31);
+}
+
+int monthFromDate(const string& d) {
+    if (!isValidDate(d)) return 0;
+    return stoi(d.substr(5,2)); // 1..12
+}
+
+string typeToStr(Type t) { return (t == Type::INCOME ? "INCOME" : "EXPENSE"); }
+
+Type strToType(const string& s) {
+    string t = s;
+    for (auto& c : t) c = toupper(c);
+    if (t == "I" || t == "INCOME") return Type::INCOME;
+    return Type::EXPENSE;
+}
+
+string trim(const string& s) {
+    size_t a = s.find_first_not_of(" \t\r\n");
+    size_t b = s.find_last_not_of(" \t\r\n");
+    if (a == string::npos) return "";
+    return s.substr(a, b - a + 1);
+}
+
+string lower(string s) { for (auto& c : s) c = tolower(c); return s; }
+
+bool readDouble(const string& prompt, double& out) {
+    while (true) {
+        cout << prompt;
+        string line; if (!getline(cin, line)) return false;
+        stringstream ss(line);
+        if (ss >> out && out >= 0.0) return true;
+        cout << "Invalid amount. Try again.\n";
+    }
+}
+
+bool readInt(const string& prompt, int& out, int lo, int hi) {
+    while (true) {
+        cout << prompt;
+        string line; if (!getline(cin, line)) return false;
+        stringstream ss(line);
+        if (ss >> out && out >= lo && out <= hi) return true;
+        cout << "Invalid choice. Try again.\n";
+    }
+}
+
+// ---------- Core features ----------
+void addTransaction() {
+    if (txnCount >= MAX_TXNS) { cout << "Storage full.\n"; return; }
+
+    Transaction t;
+    cout << "Enter date (YYYY-MM-DD): ";
+    getline(cin, t.date); t.date = trim(t.date);
+    if (!isValidDate(t.date)) { cout << "Invalid date.\n"; return; }
+
+    cout << "Type (Income/Expense or I/E): ";
+    string ty; getline(cin, ty); t.type = strToType(ty);
+
+    cout << "Category: ";
+    getline(cin, t.category); t.category = trim(t.category);
+
+    cout << "Description: ";
+    getline(cin, t.description); t.description = trim(t.description);
+
+    if (!readDouble("Amount: ", t.amount)) return;
+    if (t.amount <= 0) { cout << "Amount must be > 0.\n"; return; }
+
+    txns[txnCount++] = t;
+    cout << "Transaction added. Total: " << txnCount << "\n";
+}
+
+void listTransactions(int limit = -1) {
+    if (txnCount == 0) { cout << "No transactions.\n"; return; }
+    cout << left << setw(5) << "ID" << setw(12) << "Date" << setw(10) << "Type"
+         << setw(14) << "Category" << setw(30) << "Description"
+         << right << setw(12) << "Amount" << "\n";
+    cout << string(83, '-') << "\n";
+    int count = (limit < 0 ? txnCount : min(txnCount, limit));
+    for (int i = 0; i < count; ++i) {
+        cout << left << setw(5) << i
+             << setw(12) << txns[i].date
+             << setw(10) << typeToStr(txns[i].type)
+             << setw(14) << txns[i].category.substr(0,13)
+             << setw(30) << txns[i].description.substr(0,29)
+             << right << setw(12) << fixed << setprecision(2) << txns[i].amount
+             << "\n";
+    }
+}
+
+void sortMenu() {
+    if (txnCount <= 1) { cout << "Nothing to sort.\n"; return; }
+    cout << "Sort by:\n"
+         << " 1) Date (asc)\n"
+         << " 2) Amount (desc)\n"
+         << " 3) Type (Income first)\n"
+         << " 4) Category (A->Z)\n"
+         << " 5) Description (A->Z)\n";
+    int ch; if (!readInt("Choice: ", ch, 1, 5)) return;
+
+    switch (ch) {
+        case 1:
+            sort(txns, txns + txnCount, [](const Transaction& a, const Transaction& b){
+                return a.date < b.date;
+            });
+            break;
+        case 2:
+            sort(txns, txns + txnCount, [](const Transaction& a, const Transaction& b){
+                return a.amount > b.amount;
+            });
+            break;
+        case 3:
+            sort(txns, txns + txnCount, [](const Transaction& a, const Transaction& b){
+                if (a.type != b.type) return a.type == Type::INCOME; // income first
+                return a.date < b.date;
+            });
+            break;
+        case 4:
+            sort(txns, txns + txnCount, [](const Transaction& a, const Transaction& b){
+                if (a.category != b.category) return lower(a.category) < lower(b.category);
+                return a.date < b.date;
+            });
+            break;
+        case 5:
+            sort(txns, txns + txnCount, [](const Transaction& a, const Transaction& b){
+                return lower(a.description) < lower(b.description);
+            });
+            break;
+    }
+    cout << "Sorted.\n";
+}
+
+void searchByDescription() {
+    if (txnCount == 0) { cout << "No transactions.\n"; return; }
+    cout << "Enter keyword to search in description: ";
+    string key; getline(cin, key); key = lower(trim(key));
+    if (key.empty()) { cout << "Empty keyword.\n"; return; }
+
+    int hits = 0;
+    for (int i = 0; i < txnCount; ++i) {
+        if (lower(txns[i].description).find(key) != string::npos) {
+            if (hits == 0) {
+                cout << left << setw(5) << "ID" << setw(12) << "Date" << setw(10) << "Type"
+                     << setw(14) << "Category" << setw(30) << "Description"
+                     << right << setw(12) << "Amount" << "\n";
+                cout << string(83, '-') << "\n";
+            }
+            cout << left << setw(5) << i
+                 << setw(12) << txns[i].date
+                 << setw(10) << typeToStr(txns[i].type)
+                 << setw(14) << txns[i].category.substr(0,13)
+                 << setw(30) << txns[i].description.substr(0,29)
+                 << right << setw(12) << fixed << setprecision(2) << txns[i].amount
+                 << "\n";
+            ++hits;
+        }
+    }
+    if (hits == 0) cout << "No matches found.\n";
+}
+
+void filterExpensesOver() {
+    if (txnCount == 0) { cout << "No transactions.\n"; return; }
+    double th; if (!readDouble("Show EXPENSES over amount: ", th)) return;
+
+    int hits = 0;
+    for (int i = 0; i < txnCount; ++i) {
+        if (txns[i].type == Type::EXPENSE && txns[i].amount > th) {
+            if (hits == 0) {
+                cout << left << setw(5) << "ID" << setw(12) << "Date" << setw(10) << "Type"
+                     << setw(14) << "Category" << setw(30) << "Description"
+                     << right << setw(12) << "Amount" << "\n";
+                cout << string(83, '-') << "\n";
+            }
+            cout << left << setw(5) << i
+                 << setw(12) << txns[i].date
+                 << setw(10) << typeToStr(txns[i].type)
+                 << setw(14) << txns[i].category.substr(0,13)
+                 << setw(30) << txns[i].description.substr(0,29)
+                 << right << setw(12) << fixed << setprecision(2) << txns[i].amount
+                 << "\n";
+            ++hits;
+        }
+    }
+    if (hits == 0) cout << "No expenses above that amount.\n";
+}
+
+// Tab-separated to avoid comma/CSV headaches
+bool saveToFile(const string& filename) {
+    ofstream out(filename);
+    if (!out) return false;
+    out << "DATE\tTYPE\tCATEGORY\tDESCRIPTION\tAMOUNT\n";
+    for (int i = 0; i < txnCount; ++i) {
+        out << txns[i].date << '\t'
+            << typeToStr(txns[i].type) << '\t'
+            << txns[i].category << '\t'
+            << txns[i].description << '\t'
+            << fixed << setprecision(2) << txns[i].amount << '\n';
+    }
+    return true;
+}
+
+bool loadFromFile(const string& filename, bool clearExisting = true) {
+    ifstream in(filename);
+    if (!in) return false;
+    string line;
+    if (clearExisting) txnCount = 0;
+
+    // Skip header if present
+    streampos startPos = in.tellg();
+    if (getline(in, line)) {
+        string head = lower(trim(line));
+        if (head != "date\ttype\tcategory\tdescription\tamount") {
+            // first line is data; rewind to start
+            in.clear();
+            in.seekg(startPos);
+        }
+    }
+
+    while (getline(in, line)) {
+        if (trim(line).empty()) continue;
+        stringstream ss(line);
+        string date, typeStr, cat, desc, amountStr;
+
+        if (!getline(ss, date, '\t')) break;
+        if (!getline(ss, typeStr, '\t')) break;
+        if (!getline(ss, cat, '\t')) break;
+        if (!getline(ss, desc, '\t')) break;
+        if (!getline(ss, amountStr)) break;
+
+        Transaction t;
+        t.date = trim(date);
+        t.type = strToType(trim(typeStr));
+        t.category = trim(cat);
+        t.description = trim(desc);
+        t.amount = stod(trim(amountStr));
+
+        if (!isValidDate(t.date) || t.amount <= 0) continue; // skip bad rows
+        if (txnCount < MAX_TXNS) txns[txnCount++] = t;
+        else break;
+    }
+    return true;
+}
+
+void totals() {
+    double inc = 0, exp = 0;
+    for (int i = 0; i < txnCount; ++i) {
+        if (txns[i].type == Type::INCOME) inc += txns[i].amount;
+        else exp += txns[i].amount;
+    }
+    cout << "Total Income : " << fixed << setprecision(2) << inc << "\n";
+    cout << "Total Expense: " << fixed << setprecision(2) << exp << "\n";
+    cout << "Net Savings  : " << fixed << setprecision(2) << (inc - exp) << "\n";
+}
+
+// Bonus: ASCII monthly spending chart (expenses only)
+void monthlySpendingChart() {
+    if (txnCount == 0) { cout << "No transactions.\n"; return; }
+    double m[13] = {0}; // 1..12
+    for (int i = 0; i < txnCount; ++i) {
+        if (txns[i].type == Type::EXPENSE) {
+            int mo = monthFromDate(txns[i].date);
+            if (mo >= 1 && mo <= 12) m[mo] += txns[i].amount;
+        }
+    }
+    double mx = 0;
+    for (int mo = 1; mo <= 12; ++mo) mx = max(mx, m[mo]);
+
+    if (mx == 0) { cout << "No expenses recorded to chart.\n"; return; }
+
+    const char* mon[13] = {"", "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+    const int width = 50; // max bar width
+    cout << "Monthly Spending (Expenses) ASCII Bar Chart\n";
+    cout << "(Each # is scaled relative to the maximum month)\n\n";
+    for (int mo = 1; mo <= 12; ++mo) {
+        int bar = static_cast<int>(round((m[mo] / mx) * width));
+        cout << setw(3) << mon[mo] << " | " << string(bar, '#') << " "
+             << fixed << setprecision(2) << m[mo] << "\n";
+    }
+    cout << "Max month total = " << fixed << setprecision(2) << mx << "\n";
+}
+
+// ---------- Menu ----------
+void menu() {
+    while (true) {
+        cout << "\n=== PERSONAL FINANCE TRACKER ===\n"
+             << "1) Add transaction\n"
+             << "2) List transactions\n"
+             << "3) Sort\n"
+             << "4) Search (description)\n"
+             << "5) Filter: expenses over amount\n"
+             << "6) Show totals (income/expense/savings)\n"
+             << "7) Save to file\n"
+             << "8) Load from file\n"
+             << "9) Monthly spending chart (ASCII)\n"
+             << "0) Exit\n";
+
+        int ch; if (!readInt("Select: ", ch, 0, 9)) return;
+
+        if (ch == 0) { cout << "Goodbye!\n"; return; }
+
+        switch (ch) {
+            case 1: addTransaction(); break;
+            case 2: listTransactions(); break;
+            case 3: sortMenu(); break;
+            case 4: searchByDescription(); break;
+            case 5: filterExpensesOver(); break;
+            case 6: totals(); break;
+            case 7: {
+                cout << "Filename to save (e.g., data.tsv): ";
+                string fn; getline(cin, fn); fn = trim(fn);
+                if (fn.empty()) { cout << "Cancelled.\n"; break; }
+                cout << (saveToFile(fn) ? "Saved.\n" : "Failed to save.\n");
+                break;
+            }
+            case 8: {
+                cout << "Filename to load (e.g., data.tsv): ";
+                string fn; getline(cin, fn); fn = trim(fn);
+                if (fn.empty()) { cout << "Cancelled.\n"; break; }
+                cout << "1) Replace current data\n2) Append to current data\n";
+                int how; if (!readInt("Choice: ", how, 1, 2)) break;
+                bool ok = loadFromFile(fn, how == 1);
+                cout << (ok ? "Loaded.\n" : "Failed to load.\n");
+                break;
+            }
+            case 9: monthlySpendingChart(); break;
+        }
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    menu();
+    return 0;
+}
