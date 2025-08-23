@@ -1,0 +1,120 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Message {
+    string text;
+    string timestamp;
+};
+
+// Utility to get current time as string
+string currentTimestamp() {
+    time_t now = time(nullptr);
+    char buf[20];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    return string(buf);
+}
+
+// Global containers
+queue<Message> inbox;            // Queue for incoming messages
+stack<Message> sentStack;        // Stack for undo (sent messages)
+stack<Message> redoStack;        // Stack for redo (undone messages)
+
+// Functions
+void sendMessage() {
+    cout << "Enter message text: ";
+    string msg; getline(cin, msg);
+
+    Message m = {msg, currentTimestamp()};
+    sentStack.push(m); // store in sent history
+    while (!redoStack.empty()) redoStack.pop(); // clear redo on new send
+
+    cout << "Message sent at " << m.timestamp << endl;
+}
+
+void undoMessage() {
+    if (sentStack.empty()) {
+        cout << "No messages to undo.\n";
+        return;
+    }
+    Message m = sentStack.top(); sentStack.pop();
+    redoStack.push(m);
+    cout << "Undo: \"" << m.text << "\" (" << m.timestamp << ")\n";
+}
+
+void redoMessage() {
+    if (redoStack.empty()) {
+        cout << "No messages to redo.\n";
+        return;
+    }
+    Message m = redoStack.top(); redoStack.pop();
+    sentStack.push(m);
+    cout << "Redo: \"" << m.text << "\" (" << m.timestamp << ")\n";
+}
+
+void receiveMessage() {
+    cout << "Enter incoming message text: ";
+    string msg; getline(cin, msg);
+    Message m = {msg, currentTimestamp()};
+    inbox.push(m);
+    cout << "Incoming message received at " << m.timestamp << endl;
+}
+
+void showInbox() {
+    if (inbox.empty()) {
+        cout << "Inbox empty.\n";
+        return;
+    }
+    cout << "\n--- Inbox Messages ---\n";
+    queue<Message> temp = inbox; // copy
+    while (!temp.empty()) {
+        Message m = temp.front(); temp.pop();
+        cout << "[" << m.timestamp << "] " << m.text << endl;
+    }
+}
+
+void showSent() {
+    if (sentStack.empty()) {
+        cout << "No sent messages.\n";
+        return;
+    }
+    cout << "\n--- Sent Messages (latest on top) ---\n";
+    stack<Message> temp = sentStack; // copy
+    while (!temp.empty()) {
+        Message m = temp.top(); temp.pop();
+        cout << "[" << m.timestamp << "] " << m.text << endl;
+    }
+}
+
+// Main Menu
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    while (true) {
+        cout << "\n=== Chat Message History Manager ===\n"
+             << "1) Send Message\n"
+             << "2) Undo Last Sent Message\n"
+             << "3) Redo Last Undone Message\n"
+             << "4) Receive Incoming Message\n"
+             << "5) Show Inbox\n"
+             << "6) Show Sent Messages\n"
+             << "0) Exit\n"
+             << "Select: ";
+
+        int choice; 
+        if (!(cin >> choice)) break;
+        cin.ignore(); // clear newline
+
+        switch (choice) {
+            case 1: sendMessage(); break;
+            case 2: undoMessage(); break;
+            case 3: redoMessage(); break;
+            case 4: receiveMessage(); break;
+            case 5: showInbox(); break;
+            case 6: showSent(); break;
+            case 0: cout << "Goodbye!\n"; return 0;
+            default: cout << "Invalid option.\n"; break;
+        }
+    }
+    return 0;
+}
