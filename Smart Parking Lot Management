@@ -1,3 +1,49 @@
+
+
+----------------------FEATURE OF PROJECT-----------------Smart Parking Lot Management – Features------------------Smart Parking Lot Management – Features------
+
+ 
+Dynamic Memory Allocation (Linked List)
+
+Each car is represented as a dynamically allocated node (Car struct).
+
+No fixed-size array → memory is allocated only when a car parks.
+
+Car Entry (Parking)
+
+User enters plate number and owner name.
+
+The system records the entry timestamp automatically.
+
+Car gets added to the linked list of active parked cars.
+
+If the lot is full, the system shows overflow message:
+“Parking lot FULL! Cannot park car …”
+
+Car Exit (Remove Car)
+
+Search the linked list by plate number.
+
+Remove the car node when found.
+
+Show its entry time so the manager knows how long it was parked.
+
+Frees up one slot.
+
+-----------------------------------------------------------------------END-----------------END----------------------------------------END---------------------------------END---------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -151,3 +197,39 @@ int main() {
     }
     return 0;
 }
+
+
+------------------------           OUTPUT                  ----------------------------------  OUTPUT         -------------OUTPUT --------------------------------OUTPUT--------------------------------------------
+
+
+
+Enter parking lot capacity: 2
+
+=== Smart Parking Lot Management ===
+1) Park Car (Entry)
+2) Remove Car (Exit)
+3) Show Parked Cars
+4) Show Available Slots
+0) Exit
+Select: 1
+Enter plate number: UP32AB1234
+Enter owner name: Ashish
+Car UP32AB1234 parked successfully. Slots used: 1/2
+
+Select: 1
+Enter plate number: UP32XY9999
+Enter owner name: Raj
+Car UP32XY9999 parked successfully. Slots used: 2/2
+
+Select: 1
+Enter plate number: UP32CC1111
+Enter owner name: Kumar
+Parking lot FULL! Cannot park car UP32CC1111
+
+Select: 3
+--- Active Parked Cars ---
+Plate: UP32XY9999 | Owner: Raj | Entry: 2025-08-23 21:45:50
+Plate: UP32AB1234 | Owner: Ashish | Entry: 2025-08-23 21:45:35
+
+
+
